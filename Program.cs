@@ -1,5 +1,7 @@
 using System;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using RandomTutorialsAPI.Context;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +11,7 @@ builder.Services.AddControllers();
 //connecting to supabase
 var url = builder.Configuration.GetValue<string>("Supabase:Url");
 var key = builder.Configuration.GetValue<string>("Supabase:Key");
+var secretKey = builder.Configuration.GetValue<string>("Supabase:SecretKey");
 Console.WriteLine(url);
 
 var options = new Supabase.SupabaseOptions
@@ -29,6 +32,22 @@ builder.Services.AddDbContext<RandomTutorialsContext>(options => {
         }
     );
 
+});
+
+//auth
+var supabaseSignatureKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!));
+var validIssuer = "https://godpgveqztqtqfmtorgh.supabase.co/auth/v1";
+var validAudiences = new List<string>() { "authenticated" };
+ 
+builder.Services.AddAuthentication().AddJwtBearer(o =>
+{
+    o.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = supabaseSignatureKey,
+        ValidAudiences = validAudiences,
+        ValidIssuer = validIssuer
+    };
 });
 
 
